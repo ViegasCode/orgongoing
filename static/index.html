@@ -10,22 +10,15 @@ body {
   margin: 0;
   padding: 20px;
   overflow-x: hidden;
+  position: relative;
 }
 
 h1 {
   text-align: center;
   color: #c00;
   margin-bottom: 50px;
-}
-
-/* Background circuito animado */
-canvas#bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -2;
+  font-size: 36px;
+  letter-spacing: 1px;
 }
 
 /* Organograma */
@@ -36,7 +29,7 @@ canvas#bg {
 }
 
 .area {
-  margin-bottom: 120px;
+  margin-bottom: 100px;
   position: relative;
   width: 90%;
   max-width: 1200px;
@@ -51,31 +44,30 @@ canvas#bg {
 }
 
 .lider, .card {
-  width: 160px;
   background: #c00;
   color: white;
-  border-radius: 12px;
   padding: 10px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.25);
   cursor: pointer;
-  text-align: center;
-  transition: transform 0.2s;
-}
-
-.lider img, .card img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border: 3px solid #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .lider:hover, .card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.lider img, .card img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+  border: 3px solid #fff;
 }
 
 .equipe {
@@ -86,9 +78,16 @@ canvas#bg {
   position: relative;
 }
 
+.card {
+  background: white;
+  color: #000;
+  width: 140px;
+  padding: 10px;
+}
+
 .cargo {
-  font-size: 13px;
-  color: #fff;
+  font-size: 12px;
+  color: #666;
 }
 
 /* Upload modal */
@@ -131,7 +130,7 @@ canvas#bg {
   font-weight: bold;
 }
 
-/* Linhas SVG */
+/* SVG linhas */
 svg.line-layer {
   position: absolute;
   top: 0;
@@ -141,12 +140,22 @@ svg.line-layer {
   height: 100%;
   z-index: -1;
 }
+
+/* Background teia animada */
+canvas#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background: #fff;
+}
 </style>
 </head>
 <body>
 
 <canvas id="bg"></canvas>
-
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
@@ -160,59 +169,56 @@ svg.line-layer {
 </div>
 
 <script>
-// ===== Background circuito com animação de energia =====
+// -------- Background teia de conexões --------
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let nodes = [];
-const NODE_COUNT = 80;
+const NODE_COUNT = 60;
 for(let i=0;i<NODE_COUNT;i++){
   nodes.push({
-    x: Math.random()*canvas.width,
-    y: Math.random()*canvas.height,
-    dx: (Math.random()-0.5)*0.5,
-    dy: (Math.random()-0.5)*0.5,
-    links: [],
-    phase: Math.random()*2*Math.PI
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    dx:(Math.random()-0.5)*0.6,
+    dy:(Math.random()-0.5)*0.6,
+    links:[]
   });
-});
+}
 
-// conecta cada nó aos 2 mais próximos
-nodes.forEach(n=>{
-  let neighbors = nodes.filter(o => o!==n)
-                       .sort((a,b)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(b.x-n.x,b.y-n.y))
-                       .slice(0,2);
-  n.links = neighbors;
-});
+// criar links aleatórios
+for(let i=0;i<nodes.length;i++){
+  let nlinks = Math.floor(Math.random()*2)+1;
+  for(let j=0;j<nlinks;j++){
+    let target = nodes[Math.floor(Math.random()*nodes.length)];
+    if(target!==nodes[i] && !nodes[i].links.includes(target)){
+      nodes[i].links.push(target);
+    }
+  }
+}
 
 function animateBg(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
+  ctx.strokeStyle = '#c00';
+  ctx.lineWidth = 1;
   nodes.forEach(n=>{
-    // movimento leve
     n.x += n.dx; n.y += n.dy;
     if(n.x>canvas.width||n.x<0)n.dx*=-1;
     if(n.y>canvas.height||n.y<0)n.dy*=-1;
 
-    // linhas com "energia pulsante"
     n.links.forEach(link=>{
-      let alpha = 0.3 + 0.7*Math.abs(Math.sin(Date.now()/1000 + n.phase));
-      ctx.strokeStyle = `rgba(200,0,0,${alpha})`;
-      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(n.x,n.y);
       ctx.lineTo(link.x,link.y);
       ctx.stroke();
     });
   });
-
   requestAnimationFrame(animateBg);
 }
 animateBg();
 
-// ===== Organograma =====
+// -------- Organograma --------
 let pessoas = [];
 let selectedPessoaId = null;
 
@@ -286,7 +292,7 @@ document.getElementById("fileInput").addEventListener("change", function(){
     });
 });
 
-// Linhas curvas SVG organograma
+// Linhas curvas SVG
 function desenharLinhas(){
   document.querySelectorAll('svg.line-layer').forEach(s=>s.remove());
   const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");

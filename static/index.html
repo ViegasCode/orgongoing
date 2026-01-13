@@ -1,16 +1,41 @@
-
 <!DOCTYPE html>
-<html lang='pt-BR'>
+<html lang="pt-BR">
 <head>
-<meta charset='UTF-8'>
+<meta charset="UTF-8">
 <title>Organograma</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:20px}
-.card{background:#fff;border-radius:8px;padding:10px;margin:10px;display:inline-block}
+.area{margin-bottom:30px}
+.lider{font-weight:bold;font-size:18px;margin-bottom:10px}
+.card{background:#fff;border-radius:8px;padding:10px;margin:5px;display:inline-block}
 </style>
 </head>
 <body>
 <h1>Organograma Corporativo</h1>
-<div class='card'>Fabio Moreira<br>Coordenador</div>
+<div id="app"></div>
+
+<script>
+fetch("/api/organograma")
+.then(r=>r.json())
+.then(data=>{
+  const areas = {};
+  data.forEach(p=>{
+    if(!areas[p.area]) areas[p.area]=[];
+    areas[p.area].push(p);
+  });
+
+  let html="";
+  for(const area in areas){
+    const pessoas=areas[area];
+    const lider=pessoas.find(p=>p.cargo.toLowerCase().includes("líder") || p.cargo=="Coordenador");
+    html+=`<div class="area"><div class="lider">${area} - ${lider?.nome || ""} ${lider?.sobrenome || ""}</div>`;
+    pessoas.filter(p=>p.id!==lider?.id).forEach(p=>{
+      html+=`<div class="card">${p.nome} ${p.sobrenome}<br>${p.cargo}</div>`;
+    });
+    html+="</div>";
+  }
+  document.getElementById("app").innerHTML=html;
+});
+</script>
 </body>
 </html>

@@ -21,6 +21,20 @@ def home():
 @app.get("/api/organograma")
 def organograma():
     conn = get_db()
+    conn = sqlite3.connect("database.db", check_same_thread=False)
+    
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS pessoas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        cargo TEXT NOT NULL,
+        setor TEXT NOT NULL,
+        lider TEXT NOT NULL
+    )
+    """)
+    
+    conn.commit()
+
     conn.row_factory = sqlite3.Row
     rows = conn.execute("SELECT * FROM pessoas").fetchall()
     conn.close()

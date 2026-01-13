@@ -18,7 +18,7 @@ h1 {
   margin-bottom: 50px;
 }
 
-/* Background canvas */
+/* Background circuito animado */
 canvas#bg {
   position: fixed;
   top: 0;
@@ -36,7 +36,7 @@ canvas#bg {
 }
 
 .area {
-  margin-bottom: 100px;
+  margin-bottom: 120px;
   position: relative;
   width: 90%;
   max-width: 1200px;
@@ -59,7 +59,7 @@ canvas#bg {
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   cursor: pointer;
   text-align: center;
   transition: transform 0.2s;
@@ -131,7 +131,7 @@ canvas#bg {
   font-weight: bold;
 }
 
-/* SVG linhas */
+/* Linhas SVG */
 svg.line-layer {
   position: absolute;
   top: 0;
@@ -160,54 +160,59 @@ svg.line-layer {
 </div>
 
 <script>
-// ====== Background tecnológico animado ======
+// ===== Background circuito com animação de energia =====
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let nodes = [];
-const NODE_COUNT = 70;
+const NODE_COUNT = 80;
 for(let i=0;i<NODE_COUNT;i++){
   nodes.push({
     x: Math.random()*canvas.width,
     y: Math.random()*canvas.height,
-    dx: (Math.random()-0.5)*0.6,
-    dy: (Math.random()-0.5)*0.6,
-    links: []
+    dx: (Math.random()-0.5)*0.5,
+    dy: (Math.random()-0.5)*0.5,
+    links: [],
+    phase: Math.random()*2*Math.PI
   });
-}
+});
 
-// Cada nó se conecta a um vizinho próximo
+// conecta cada nó aos 2 mais próximos
 nodes.forEach(n=>{
-  let neighbors = nodes
-    .filter(o => o!==n)
-    .sort((a,b)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(b.x-n.x,b.y-n.y))
-    .slice(0,2); // conecta com 2 mais próximos
+  let neighbors = nodes.filter(o => o!==n)
+                       .sort((a,b)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(b.x-n.x,b.y-n.y))
+                       .slice(0,2);
   n.links = neighbors;
 });
 
 function animateBg(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.strokeStyle = '#c00';
-  ctx.lineWidth = 1;
+
   nodes.forEach(n=>{
+    // movimento leve
     n.x += n.dx; n.y += n.dy;
     if(n.x>canvas.width||n.x<0)n.dx*=-1;
     if(n.y>canvas.height||n.y<0)n.dy*=-1;
 
+    // linhas com "energia pulsante"
     n.links.forEach(link=>{
+      let alpha = 0.3 + 0.7*Math.abs(Math.sin(Date.now()/1000 + n.phase));
+      ctx.strokeStyle = `rgba(200,0,0,${alpha})`;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(n.x,n.y);
       ctx.lineTo(link.x,link.y);
       ctx.stroke();
     });
   });
+
   requestAnimationFrame(animateBg);
 }
 animateBg();
 
-// ====== Organograma ======
+// ===== Organograma =====
 let pessoas = [];
 let selectedPessoaId = null;
 
@@ -281,7 +286,7 @@ document.getElementById("fileInput").addEventListener("change", function(){
     });
 });
 
-// Linhas curvas SVG
+// Linhas curvas SVG organograma
 function desenharLinhas(){
   document.querySelectorAll('svg.line-layer').forEach(s=>s.remove());
   const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");

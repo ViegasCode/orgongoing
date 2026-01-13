@@ -2,40 +2,122 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Organograma</title>
+<title>Organograma Corporativo</title>
 <style>
-body{font-family:Arial;background:#f4f6f8;padding:20px}
-.area{margin-bottom:30px}
-.lider{font-weight:bold;font-size:18px;margin-bottom:10px}
-.card{background:#fff;border-radius:8px;padding:10px;margin:5px;display:inline-block}
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 30px;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+.area {
+  margin-bottom: 50px;
+}
+
+.area-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.lider {
+  background: #1f3a5f;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.equipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 10px;
+  width: 150px;
+  text-align: center;
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+}
+
+.card img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
+.cargo {
+  font-size: 12px;
+  color: #666;
+}
 </style>
 </head>
 <body>
+
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
 <script>
 fetch("/api/organograma")
-.then(r=>r.json())
-.then(data=>{
+.then(res => res.json())
+.then(data => {
+
   const areas = {};
-  data.forEach(p=>{
-    if(!areas[p.area]) areas[p.area]=[];
+  data.forEach(p => {
+    if (!areas[p.area]) areas[p.area] = [];
     areas[p.area].push(p);
   });
 
-  let html="";
-  for(const area in areas){
-    const pessoas=areas[area];
-    const lider=pessoas.find(p=>p.cargo.toLowerCase().includes("líder") || p.cargo=="Coordenador");
-    html+=`<div class="area"><div class="lider">${area} - ${lider?.nome || ""} ${lider?.sobrenome || ""}</div>`;
-    pessoas.filter(p=>p.id!==lider?.id).forEach(p=>{
-      html+=`<div class="card">${p.nome} ${p.sobrenome}<br>${p.cargo}</div>`;
+  let html = "";
+
+  for (const area in areas) {
+    const pessoas = areas[area];
+
+    const lider = pessoas.find(p => 
+      p.cargo.toLowerCase().includes("líder") || p.cargo.toLowerCase().includes("coordenador")
+    );
+
+    const equipe = pessoas.filter(p => p.id !== lider?.id);
+
+    html += `
+      <div class="area">
+        <div class="area-title">${area}</div>
+        <div class="lider">
+          <img src="/static/uploads/${lider?.foto || "default.png"}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
+          <div>${lider?.nome || ""} ${lider?.sobrenome || ""}</div>
+          <div class="cargo">${lider?.cargo || ""}</div>
+        </div>
+        <div class="equipe">
+    `;
+
+    equipe.forEach(p => {
+      html += `
+        <div class="card">
+          <img src="/static/uploads/${p.foto || "default.png"}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
+          <div>${p.nome} ${p.sobrenome}</div>
+          <div class="cargo">${p.cargo}</div>
+        </div>
+      `;
     });
-    html+="</div>";
+
+    html += `</div></div>`;
   }
-  document.getElementById("app").innerHTML=html;
+
+  document.getElementById("app").innerHTML = html;
 });
 </script>
+
 </body>
 </html>

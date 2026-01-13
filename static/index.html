@@ -12,21 +12,13 @@ body {
   overflow-x: hidden;
 }
 
-canvas#bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-}
-
 h1 {
   text-align: center;
   color: #c00;
   margin-bottom: 50px;
 }
 
+/* Organograma */
 #app {
   display: flex;
   flex-direction: column;
@@ -34,16 +26,16 @@ h1 {
 }
 
 .area {
-  margin-bottom: 80px;
+  margin-bottom: 100px;
+  position: relative;
   width: 90%;
   max-width: 1200px;
-  position: relative;
 }
 
 .area-title {
   font-size: 28px;
   font-weight: bold;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   color: #c00;
   text-align: center;
 }
@@ -53,12 +45,12 @@ h1 {
   color: white;
   padding: 15px;
   border-radius: 12px;
-  display: inline-block;
-  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto 50px auto;
   font-weight: bold;
-  text-align: center;
   box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-  position: relative;
   cursor: pointer;
 }
 
@@ -73,8 +65,8 @@ h1 {
 
 .equipe {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 20px;
   position: relative;
 }
@@ -88,7 +80,6 @@ h1 {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   transition: transform 0.2s;
   cursor: pointer;
-  position: relative;
 }
 
 .card:hover {
@@ -98,13 +89,6 @@ h1 {
 .cargo {
   font-size: 13px;
   color: #666;
-}
-
-.line {
-  position: absolute;
-  height: 2px;
-  background: #c00;
-  z-index: 0;
 }
 
 /* Upload modal */
@@ -146,12 +130,32 @@ h1 {
   color: green;
   font-weight: bold;
 }
+
+/* SVG linhas */
+svg.line-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+/* Background circuitos */
+canvas#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
 </style>
 </head>
 <body>
 
 <canvas id="bg"></canvas>
-
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
@@ -165,34 +169,55 @@ h1 {
 </div>
 
 <script>
-// Background animado de circuitos
+// -------- Background circuitos conectados --------
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let nodes = [];
-for(let i=0;i<100;i++){
-  nodes.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, dx:(Math.random()-0.5)*0.5, dy:(Math.random()-0.5)*0.5});
+for(let i=0;i<80;i++){
+  nodes.push({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    dx:(Math.random()-0.5)*1,
+    dy:(Math.random()-0.5)*1,
+    links:[]
+  });
+}
+
+// criar links aleatórios
+for(let i=0;i<nodes.length;i++){
+  let nlinks = Math.floor(Math.random()*3)+1;
+  for(let j=0;j<nlinks;j++){
+    let target = nodes[Math.floor(Math.random()*nodes.length)];
+    if(target!==nodes[i] && !nodes[i].links.includes(target)){
+      nodes[i].links.push(target);
+    }
+  }
 }
 
 function animateBg(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.strokeStyle = '#c00';
+  ctx.lineWidth = 1;
   nodes.forEach(n=>{
     n.x += n.dx; n.y += n.dy;
     if(n.x>canvas.width||n.x<0)n.dx*=-1;
     if(n.y>canvas.height||n.y<0)n.dy*=-1;
-    ctx.beginPath();
-    ctx.moveTo(n.x,n.y);
-    ctx.lineTo(n.x+5,n.y+5);
-    ctx.stroke();
+
+    n.links.forEach(link=>{
+      ctx.beginPath();
+      ctx.moveTo(n.x,n.y);
+      ctx.lineTo(link.x,link.y);
+      ctx.stroke();
+    });
   });
   requestAnimationFrame(animateBg);
 }
 animateBg();
 
-// Organograma
+// -------- Organograma --------
 let pessoas = [];
 let selectedPessoaId = null;
 
@@ -266,35 +291,41 @@ document.getElementById("fileInput").addEventListener("change", function(){
     });
 });
 
-// Linhas conectando líder ↔ equipe
+// Linhas curvas SVG
 function desenharLinhas(){
-  const canvas = document.createElement('canvas');
-  canvas.width = document.getElementById('app').offsetWidth;
-  canvas.height = document.getElementById('app').offsetHeight;
-  canvas.style.position = 'absolute';
-  canvas.style.top = 0;
-  canvas.style.left = 0;
-  canvas.style.zIndex = -1;
-  document.getElementById('app').appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = '#c00';
-  ctx.lineWidth = 2;
+  document.querySelectorAll('svg.line-layer').forEach(s=>s.remove());
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.classList.add("line-layer");
+  svg.setAttribute("width","100%");
+  svg.setAttribute("height","100%");
+  document.getElementById('app').appendChild(svg);
 
   document.querySelectorAll('.area').forEach(area=>{
     const lider = area.querySelector('.lider');
-    const cards = area.querySelectorAll('.card');
     const liderRect = lider.getBoundingClientRect();
+    const cards = area.querySelectorAll('.card');
+
     cards.forEach(card=>{
       const cardRect = card.getBoundingClientRect();
-      ctx.beginPath();
-      ctx.moveTo(liderRect.left+liderRect.width/2, liderRect.bottom-area.offsetTop);
-      ctx.lineTo(cardRect.left+cardRect.width/2, cardRect.top-area.offsetTop);
-      ctx.stroke();
+      const line = document.createElementNS("http://www.w3.org/2000/svg","path");
+      const x1 = liderRect.left + liderRect.width/2;
+      const y1 = liderRect.bottom;
+      const x2 = cardRect.left + cardRect.width/2;
+      const y2 = cardRect.top;
+
+      const mx = (x1+x2)/2;
+      const path = `M ${x1} ${y1} C ${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`;
+      line.setAttribute("d", path);
+      line.setAttribute("stroke","#c00");
+      line.setAttribute("stroke-width","2");
+      line.setAttribute("fill","transparent");
+      svg.appendChild(line);
     });
   });
 }
 
 carregarOrganograma();
+window.addEventListener('resize', desenharLinhas);
 </script>
 
 </body>

@@ -62,8 +62,8 @@ h1 {
 }
 
 .lider img, .card img {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 8px;
@@ -141,7 +141,7 @@ svg.line-layer {
   z-index: -1;
 }
 
-/* Background teia animada */
+/* Background tecnologia sutil */
 canvas#bg {
   position: fixed;
   top: 0;
@@ -169,25 +169,25 @@ canvas#bg {
 </div>
 
 <script>
-// -------- Background teia de conexões --------
+// -------- Background tecnologia sutil --------
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const NODE_COUNT = 50;
 let nodes = [];
-const NODE_COUNT = 60;
 for(let i=0;i<NODE_COUNT;i++){
   nodes.push({
     x:Math.random()*canvas.width,
     y:Math.random()*canvas.height,
-    dx:(Math.random()-0.5)*0.6,
-    dy:(Math.random()-0.5)*0.6,
+    dx:(Math.random()-0.5)*0.4,
+    dy:(Math.random()-0.5)*0.4,
     links:[]
   });
 }
 
-// criar links aleatórios
+// criar links suaves e discretos
 for(let i=0;i<nodes.length;i++){
   let nlinks = Math.floor(Math.random()*2)+1;
   for(let j=0;j<nlinks;j++){
@@ -200,8 +200,8 @@ for(let i=0;i<nodes.length;i++){
 
 function animateBg(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.strokeStyle = '#c00';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(192,0,0,0.4)';
+  ctx.lineWidth = 0.8;
   nodes.forEach(n=>{
     n.x += n.dx; n.y += n.dy;
     if(n.x>canvas.width||n.x<0)n.dx*=-1;

@@ -18,6 +18,16 @@ h1 {
   margin-bottom: 50px;
 }
 
+/* Background canvas */
+canvas#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
+
 /* Organograma */
 #app {
   display: flex;
@@ -40,18 +50,19 @@ h1 {
   text-align: center;
 }
 
-.lider {
+.lider, .card {
+  width: 160px;
   background: #c00;
   color: white;
-  padding: 15px;
   border-radius: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 0 auto 50px auto;
-  font-weight: bold;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   cursor: pointer;
+  text-align: center;
+  transition: transform 0.2s;
 }
 
 .lider img, .card img {
@@ -63,6 +74,10 @@ h1 {
   border: 3px solid #fff;
 }
 
+.lider:hover, .card:hover {
+  transform: translateY(-5px);
+}
+
 .equipe {
   display: flex;
   justify-content: center;
@@ -71,24 +86,9 @@ h1 {
   position: relative;
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 15px;
-  width: 160px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: transform 0.2s;
-  cursor: pointer;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-}
-
 .cargo {
   font-size: 13px;
-  color: #666;
+  color: #fff;
 }
 
 /* Upload modal */
@@ -141,21 +141,12 @@ svg.line-layer {
   height: 100%;
   z-index: -1;
 }
-
-/* Background circuitos */
-canvas#bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -2;
-}
 </style>
 </head>
 <body>
 
 <canvas id="bg"></canvas>
+
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
@@ -169,33 +160,32 @@ canvas#bg {
 </div>
 
 <script>
-// -------- Background circuitos conectados --------
+// ====== Background tecnológico animado ======
 const canvas = document.getElementById('bg');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let nodes = [];
-for(let i=0;i<80;i++){
+const NODE_COUNT = 70;
+for(let i=0;i<NODE_COUNT;i++){
   nodes.push({
-    x:Math.random()*canvas.width,
-    y:Math.random()*canvas.height,
-    dx:(Math.random()-0.5)*1,
-    dy:(Math.random()-0.5)*1,
-    links:[]
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    dx: (Math.random()-0.5)*0.6,
+    dy: (Math.random()-0.5)*0.6,
+    links: []
   });
 }
 
-// criar links aleatórios
-for(let i=0;i<nodes.length;i++){
-  let nlinks = Math.floor(Math.random()*3)+1;
-  for(let j=0;j<nlinks;j++){
-    let target = nodes[Math.floor(Math.random()*nodes.length)];
-    if(target!==nodes[i] && !nodes[i].links.includes(target)){
-      nodes[i].links.push(target);
-    }
-  }
-}
+// Cada nó se conecta a um vizinho próximo
+nodes.forEach(n=>{
+  let neighbors = nodes
+    .filter(o => o!==n)
+    .sort((a,b)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(b.x-n.x,b.y-n.y))
+    .slice(0,2); // conecta com 2 mais próximos
+  n.links = neighbors;
+});
 
 function animateBg(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -217,7 +207,7 @@ function animateBg(){
 }
 animateBg();
 
-// -------- Organograma --------
+// ====== Organograma ======
 let pessoas = [];
 let selectedPessoaId = null;
 
@@ -308,10 +298,10 @@ function desenharLinhas(){
     cards.forEach(card=>{
       const cardRect = card.getBoundingClientRect();
       const line = document.createElementNS("http://www.w3.org/2000/svg","path");
-      const x1 = liderRect.left + liderRect.width/2;
-      const y1 = liderRect.bottom;
-      const x2 = cardRect.left + cardRect.width/2;
-      const y2 = cardRect.top;
+      const x1 = liderRect.left + liderRect.width/2 + window.scrollX;
+      const y1 = liderRect.bottom + window.scrollY;
+      const x2 = cardRect.left + cardRect.width/2 + window.scrollX;
+      const y2 = cardRect.top + window.scrollY;
 
       const mx = (x1+x2)/2;
       const path = `M ${x1} ${y1} C ${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`;

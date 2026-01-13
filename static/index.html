@@ -6,14 +6,25 @@
 <style>
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
-  background: #eef2f7;
+  background: #fff;
+  margin: 0;
   padding: 20px;
-  text-align: center;
+  overflow-x: hidden;
+}
+
+canvas#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
 }
 
 h1 {
-  margin-bottom: 40px;
-  color: #1f3a5f;
+  text-align: center;
+  color: #c00;
+  margin-bottom: 50px;
 }
 
 #app {
@@ -23,31 +34,35 @@ h1 {
 }
 
 .area {
-  margin-bottom: 60px;
+  margin-bottom: 80px;
   width: 90%;
   max-width: 1200px;
+  position: relative;
 }
 
 .area-title {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: bold;
   margin-bottom: 20px;
-  color: #33475b;
+  color: #c00;
+  text-align: center;
 }
 
 .lider {
-  background: #1f3a5f;
+  background: #c00;
   color: white;
   padding: 15px;
   border-radius: 12px;
   display: inline-block;
-  margin-bottom: 25px;
+  margin-bottom: 40px;
   font-weight: bold;
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  position: relative;
+  cursor: pointer;
 }
 
-.lider img {
+.lider img, .card img {
   width: 100px;
   height: 100px;
   border-radius: 50%;
@@ -61,6 +76,7 @@ h1 {
   flex-wrap: wrap;
   justify-content: center;
   gap: 20px;
+  position: relative;
 }
 
 .card {
@@ -72,19 +88,11 @@ h1 {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   transition: transform 0.2s;
   cursor: pointer;
+  position: relative;
 }
 
 .card:hover {
   transform: translateY(-5px);
-}
-
-.card img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 8px;
-  border: 2px solid #1f3a5f;
 }
 
 .cargo {
@@ -92,27 +100,40 @@ h1 {
   color: #666;
 }
 
-/* Upload RH */
-.upload-container {
-  margin-top: 50px;
+.line {
+  position: absolute;
+  height: 2px;
+  background: #c00;
+  z-index: 0;
+}
+
+/* Upload modal */
+#uploadModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+#uploadModal .modal-content {
   background: #fff;
-  padding: 20px;
+  padding: 30px;
   border-radius: 12px;
-  max-width: 500px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: center;
 }
 
-.upload-container h2 {
-  margin-bottom: 20px;
-  color: #1f3a5f;
-}
-
-.upload-container input[type="file"] {
+#uploadModal input[type="file"] {
   display: none;
 }
 
-.upload-container label {
-  background: #1f3a5f;
+#uploadModal label {
+  background: #c00;
   color: white;
   padding: 12px 25px;
   border-radius: 8px;
@@ -120,7 +141,7 @@ h1 {
   font-weight: bold;
 }
 
-.upload-container .status {
+#uploadModal .status {
   margin-top: 15px;
   color: green;
   font-weight: bold;
@@ -129,84 +150,150 @@ h1 {
 </head>
 <body>
 
+<canvas id="bg"></canvas>
+
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
-<div class="upload-container">
-  <h2>RH - Upload de Foto</h2>
-  <input type="file" id="fileInput">
-  <label for="fileInput">Escolher arquivo</label>
-  <div class="status" id="status"></div>
+<div id="uploadModal">
+  <div class="modal-content">
+    <h2>Upload de Foto</h2>
+    <input type="file" id="fileInput">
+    <label for="fileInput">Escolher arquivo</label>
+    <div class="status" id="status"></div>
+  </div>
 </div>
 
 <script>
-let selectedPessoaId = 1; // Exemplo: trocar dinamicamente ou via seleção futura
+// Background animado de circuitos
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-// Função para carregar organograma
-function carregarOrganograma() {
-  fetch("/api/organograma")
-    .then(res => res.json())
-    .then(data => {
-      const areas = {};
-      data.forEach(p => {
-        if (!areas[p.area]) areas[p.area] = [];
-        areas[p.area].push(p);
-      });
-
-      let html = "";
-      for (const area in areas) {
-        const pessoas = areas[area];
-        const lider = pessoas.find(p => p.cargo.toLowerCase().includes("líder") || p.cargo.toLowerCase().includes("coordenador"));
-        const equipe = pessoas.filter(p => p.id !== lider?.id);
-
-        html += `<div class="area">
-          <div class="area-title">${area}</div>
-          <div class="lider">
-            <img src="/static/uploads/${lider?.foto || 'default.png'}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
-            <div>${lider?.nome || ''} ${lider?.sobrenome || ''}</div>
-            <div class="cargo">${lider?.cargo || ''}</div>
-          </div>
-          <div class="equipe">`;
-
-        equipe.forEach(p => {
-          html += `<div class="card" onclick="selectedPessoaId=${p.id}">
-            <img src="/static/uploads/${p.foto || 'default.png'}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
-            <div>${p.nome} ${p.sobrenome}</div>
-            <div class="cargo">${p.cargo}</div>
-          </div>`;
-        });
-
-        html += `</div></div>`;
-      }
-
-      document.getElementById("app").innerHTML = html;
-    });
+let nodes = [];
+for(let i=0;i<100;i++){
+  nodes.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, dx:(Math.random()-0.5)*0.5, dy:(Math.random()-0.5)*0.5});
 }
 
-// Upload de foto
-document.getElementById("fileInput").addEventListener("change", function() {
+function animateBg(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#c00';
+  nodes.forEach(n=>{
+    n.x += n.dx; n.y += n.dy;
+    if(n.x>canvas.width||n.x<0)n.dx*=-1;
+    if(n.y>canvas.height||n.y<0)n.dy*=-1;
+    ctx.beginPath();
+    ctx.moveTo(n.x,n.y);
+    ctx.lineTo(n.x+5,n.y+5);
+    ctx.stroke();
+  });
+  requestAnimationFrame(animateBg);
+}
+animateBg();
+
+// Organograma
+let pessoas = [];
+let selectedPessoaId = null;
+
+function carregarOrganograma(){
+  fetch("/api/organograma").then(r=>r.json()).then(data=>{
+    pessoas = data;
+    const areas = {};
+    data.forEach(p=>{
+      if(!areas[p.area]) areas[p.area]=[];
+      areas[p.area].push(p);
+    });
+
+    let html = "";
+    for(const area in areas){
+      const ps = areas[area];
+      const lider = ps.find(p=>p.cargo.toLowerCase().includes("líder") || p.cargo.toLowerCase().includes("coordenador"));
+      const equipe = ps.filter(p=>p.id!==lider?.id);
+
+      html += `<div class="area" id="area-${area}">
+        <div class="area-title">${area}</div>
+        <div class="lider" data-id="${lider?.id}">
+          <img src="/static/uploads/${lider?.foto || 'default.png'}">
+          <div>${lider?.nome || ''} ${lider?.sobrenome || ''}</div>
+          <div class="cargo">${lider?.cargo || ''}</div>
+        </div>
+        <div class="equipe">`;
+
+      equipe.forEach(p=>{
+        html += `<div class="card" data-id="${p.id}">
+          <img src="/static/uploads/${p.foto || 'default.png'}">
+          <div>${p.nome} ${p.sobrenome}</div>
+          <div class="cargo">${p.cargo}</div>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    }
+
+    document.getElementById("app").innerHTML = html;
+    adicionarEventos();
+    desenharLinhas();
+  });
+}
+
+function adicionarEventos(){
+  document.querySelectorAll('.lider img, .card img').forEach(img=>{
+    img.onclick = function(){
+      selectedPessoaId = parseInt(this.parentElement.dataset.id);
+      document.getElementById('uploadModal').style.display = 'flex';
+    }
+  });
+}
+
+// Upload
+document.getElementById("fileInput").addEventListener("change", function(){
   const file = this.files[0];
-  if (!file) return;
+  if(!file) return;
 
   const formData = new FormData();
   formData.append("file", file);
 
-  fetch(`/api/upload/${selectedPessoaId}`, {
-    method: "POST",
-    body: formData
-  })
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById("status").innerText = "Foto enviada com sucesso!";
-    carregarOrganograma(); // Atualiza organograma após upload
-  })
-  .catch(err => {
-    document.getElementById("status").innerText = "Erro ao enviar foto";
-    console.error(err);
-  });
+  fetch(`/api/upload/${selectedPessoaId}`, {method:"POST", body:formData})
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById("status").innerText = "Foto enviada com sucesso!";
+      carregarOrganograma();
+      setTimeout(()=>document.getElementById("uploadModal").style.display="none", 1000);
+    }).catch(err=>{
+      document.getElementById("status").innerText = "Erro ao enviar foto";
+      console.error(err);
+    });
 });
 
-// Inicializa
+// Linhas conectando líder ↔ equipe
+function desenharLinhas(){
+  const canvas = document.createElement('canvas');
+  canvas.width = document.getElementById('app').offsetWidth;
+  canvas.height = document.getElementById('app').offsetHeight;
+  canvas.style.position = 'absolute';
+  canvas.style.top = 0;
+  canvas.style.left = 0;
+  canvas.style.zIndex = -1;
+  document.getElementById('app').appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#c00';
+  ctx.lineWidth = 2;
+
+  document.querySelectorAll('.area').forEach(area=>{
+    const lider = area.querySelector('.lider');
+    const cards = area.querySelectorAll('.card');
+    const liderRect = lider.getBoundingClientRect();
+    cards.forEach(card=>{
+      const cardRect = card.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(liderRect.left+liderRect.width/2, liderRect.bottom-area.offsetTop);
+      ctx.lineTo(cardRect.left+cardRect.width/2, cardRect.top-area.offsetTop);
+      ctx.stroke();
+    });
+  });
+}
+
 carregarOrganograma();
 </script>
 

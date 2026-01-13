@@ -15,7 +15,7 @@ DB_FILE = "database.db"
 def get_db():
     return sqlite3.connect(DB_FILE)
 
-# Criar tabela e popular dados
+# Inicializa banco
 conn = get_db()
 c = conn.cursor()
 c.execute("""

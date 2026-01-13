@@ -5,49 +5,77 @@
 <title>Organograma Corporativo</title>
 <style>
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  padding: 30px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #eef2f7;
+  padding: 20px;
+  text-align: center;
 }
 
 h1 {
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  color: #1f3a5f;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .area {
-  margin-bottom: 50px;
+  margin-bottom: 60px;
+  width: 90%;
+  max-width: 1200px;
 }
 
 .area-title {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: bold;
   margin-bottom: 20px;
+  color: #33475b;
 }
 
 .lider {
   background: #1f3a5f;
   color: white;
   padding: 15px;
-  border-radius: 10px;
+  border-radius: 12px;
   display: inline-block;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   font-weight: bold;
   text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.lider img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 3px solid #fff;
 }
 
 .equipe {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  justify-content: center;
+  gap: 20px;
 }
 
 .card {
   background: white;
-  border-radius: 10px;
-  padding: 10px;
-  width: 150px;
+  border-radius: 12px;
+  padding: 15px;
+  width: 160px;
   text-align: center;
-  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-5px);
 }
 
 .card img {
@@ -56,11 +84,46 @@ h1 {
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 8px;
+  border: 2px solid #1f3a5f;
 }
 
 .cargo {
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
+}
+
+/* Upload RH */
+.upload-container {
+  margin-top: 50px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.upload-container h2 {
+  margin-bottom: 20px;
+  color: #1f3a5f;
+}
+
+.upload-container input[type="file"] {
+  display: none;
+}
+
+.upload-container label {
+  background: #1f3a5f;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.upload-container .status {
+  margin-top: 15px;
+  color: green;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -69,54 +132,82 @@ h1 {
 <h1>Organograma Corporativo</h1>
 <div id="app"></div>
 
+<div class="upload-container">
+  <h2>RH - Upload de Foto</h2>
+  <input type="file" id="fileInput">
+  <label for="fileInput">Escolher arquivo</label>
+  <div class="status" id="status"></div>
+</div>
+
 <script>
-fetch("/api/organograma")
-.then(res => res.json())
-.then(data => {
+let selectedPessoaId = 1; // Exemplo: trocar dinamicamente ou via seleção futura
 
-  const areas = {};
-  data.forEach(p => {
-    if (!areas[p.area]) areas[p.area] = [];
-    areas[p.area].push(p);
-  });
+// Função para carregar organograma
+function carregarOrganograma() {
+  fetch("/api/organograma")
+    .then(res => res.json())
+    .then(data => {
+      const areas = {};
+      data.forEach(p => {
+        if (!areas[p.area]) areas[p.area] = [];
+        areas[p.area].push(p);
+      });
 
-  let html = "";
+      let html = "";
+      for (const area in areas) {
+        const pessoas = areas[area];
+        const lider = pessoas.find(p => p.cargo.toLowerCase().includes("líder") || p.cargo.toLowerCase().includes("coordenador"));
+        const equipe = pessoas.filter(p => p.id !== lider?.id);
 
-  for (const area in areas) {
-    const pessoas = areas[area];
+        html += `<div class="area">
+          <div class="area-title">${area}</div>
+          <div class="lider">
+            <img src="/static/uploads/${lider?.foto || 'default.png'}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
+            <div>${lider?.nome || ''} ${lider?.sobrenome || ''}</div>
+            <div class="cargo">${lider?.cargo || ''}</div>
+          </div>
+          <div class="equipe">`;
 
-    const lider = pessoas.find(p => 
-      p.cargo.toLowerCase().includes("líder") || p.cargo.toLowerCase().includes("coordenador")
-    );
+        equipe.forEach(p => {
+          html += `<div class="card" onclick="selectedPessoaId=${p.id}">
+            <img src="/static/uploads/${p.foto || 'default.png'}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
+            <div>${p.nome} ${p.sobrenome}</div>
+            <div class="cargo">${p.cargo}</div>
+          </div>`;
+        });
 
-    const equipe = pessoas.filter(p => p.id !== lider?.id);
+        html += `</div></div>`;
+      }
 
-    html += `
-      <div class="area">
-        <div class="area-title">${area}</div>
-        <div class="lider">
-          <img src="/static/uploads/${lider?.foto || "default.png"}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
-          <div>${lider?.nome || ""} ${lider?.sobrenome || ""}</div>
-          <div class="cargo">${lider?.cargo || ""}</div>
-        </div>
-        <div class="equipe">
-    `;
-
-    equipe.forEach(p => {
-      html += `
-        <div class="card">
-          <img src="/static/uploads/${p.foto || "default.png"}" onerror="this.src='https://i.imgur.com/6VBx3io.png'">
-          <div>${p.nome} ${p.sobrenome}</div>
-          <div class="cargo">${p.cargo}</div>
-        </div>
-      `;
+      document.getElementById("app").innerHTML = html;
     });
+}
 
-    html += `</div></div>`;
-  }
+// Upload de foto
+document.getElementById("fileInput").addEventListener("change", function() {
+  const file = this.files[0];
+  if (!file) return;
 
-  document.getElementById("app").innerHTML = html;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  fetch(`/api/upload/${selectedPessoaId}`, {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("status").innerText = "Foto enviada com sucesso!";
+    carregarOrganograma(); // Atualiza organograma após upload
+  })
+  .catch(err => {
+    document.getElementById("status").innerText = "Erro ao enviar foto";
+    console.error(err);
+  });
 });
+
+// Inicializa
+carregarOrganograma();
 </script>
 
 </body>
